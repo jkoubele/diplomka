@@ -9,10 +9,19 @@ if __name__ == "__main__":
     """
     UCB konverguje, kdyz -0.4765260 zmenime na -0.4765261 tak diverguje
     """
-    game = np.asarray([[0,-0.476527], 
+    game = np.asarray([[0,-0.476526], 
+                       [11,-10],
+                       [-10,11]], dtype = np.float64)
+    game = np.asarray([[0.9740483 , 0.63154835, 0.09830574, 0.        ],
+       [0.17752728, 0.65709828, 0.09961379, 0.92046434],
+       [0.35022567, 0.8916837 , 1.        , 0.53076941],
+       [0.49642977, 0.80655912, 0.68135012, 0.37950726]], dtype = np.float64)
+    
+    game = np.asarray([[0,-0.476526], 
                        [11,-10],
                        [-10,11]], dtype = np.float64)
     
+    """    
     game = np.asarray([[0.9740483 , 0.63154835, 0.09830574, 0.       ],
        [0.17752728, 0.65709828, 0.09961379, 0.92046434],
        [0.35022567, 0.8916837 , 1.        , 0.53076941],
@@ -27,7 +36,7 @@ if __name__ == "__main__":
    
     
     
-    """
+    
     
     Hure konvergujici hra
     game = np.asarray([[0.9740483 , 0.63154835, 0.09830574, 0.        ],
@@ -75,21 +84,19 @@ if __name__ == "__main__":
     game -= game.min()
     game /= (game.max() - game.min())
     v, s1, s2 = solve_game(game)
-    num_rounds = 100000
+    num_rounds = 500000
     
     player1 = Exp3Agent(game.shape[0], num_rounds)
     player2 = Exp3Agent(game.shape[1], num_rounds)
-    
-    player1 = QAgent(game.shape[0], epsilon = 0.5, diminish=True)
-    player2 = QAgent(game.shape[1], epsilon = 0.5, diminish=True)
     """
-    player1 = UCBAgent(game.shape[0], c=20)
-    player2 = UCBAgent(game.shape[1], c=20)
-    """
+    player1 = QAgent(game.shape[0], epsilon = 0.1, diminish=True)
+    player2 = QAgent(game.shape[1], epsilon = 0.1, diminish=True)
     
-    
-    reward1 = 0
-    reward2 = 0
+    player1 = UCBAgent(game.shape[0], c=1)
+    player2 = UCBAgent(game.shape[1], c=1)
+    """  
+    player1 = GradientBasedAgent(game.shape[0], alpha=0.01)
+    player2 = GradientBasedAgent(game.shape[1], alpha=0.01)
     
     epsilons = []
     v_estimates_error = []
@@ -98,18 +105,24 @@ if __name__ == "__main__":
     avg_v = 0
         
     for t in range(num_rounds):
-        action1 = player1.select_action(reward1)
-        action2 = player2.select_action(reward2)
+        action1 = player1.select_action()
+        action2 = player2.select_action()
+        
         outcomes[action1, action2] += 1
         outcome = game[action1, action2]
+        
         reward1 = outcome
-        reward2 = 1 - outcome  
+        reward2 = 1 - outcome
+        
+        player1.get_reward_and_update(reward1)
+        player2.get_reward_and_update(reward2)
+        
         avg_v = (avg_v * t + reward1) / (t + 1)
         v_estimates_error.append(np.abs(avg_v - v))
         
         if (t % 1 == 0 and t > 0):
-            avg_strategy_1 = player1.trials / np.sum(player1.trials)
-            avg_strategy_2 = player2.trials / np.sum(player2.trials)
+            avg_strategy_1 = player1.greedy_trials / np.sum(player1.greedy_trials)
+            avg_strategy_2 = player2.greedy_trials / np.sum(player2.greedy_trials)
             br_value_1 = np.max(np.dot(game, avg_strategy_2))
             br_value_2 = np.min(np.dot(avg_strategy_1, game))
             empirical_v = np.dot(np.dot(avg_strategy_1, game), avg_strategy_2)
@@ -121,8 +134,8 @@ if __name__ == "__main__":
                         
             
         
-    print("Player 1 average strategy:", player1.trials / np.sum(player1.trials))
-    print("Player 2 average strategy:", player2.trials / np.sum(player2.trials))
+    print("Player 1 average strategy:", player1.greedy_trials / np.sum(player1.greedy_trials))
+    print("Player 2 average strategy:", player2.greedy_trials / np.sum(player2.greedy_trials))
     plt.plot(epsilons)
     plt.xlabel("t")
     plt.ylabel("epsilon")
