@@ -116,7 +116,7 @@ class GradientBasedAgent(Agent):
         return action
     
     def get_reward_and_update(self, reward: float) -> None:
-        self.avg_reward = (np.sum(self.trials) * self.avg_reward + reward) / (np.sum(self.trials) + 1)
+        self.avg_reward = (np.sum(self.trials) * self.avg_reward + reward) / (np.sum(self.trials) + 1)        
         self.trials[self.last_action] += 1
         self.greedy_trials[self.last_action] += 1
         self.weights[self.last_action] += self.alpha * (reward - self.avg_reward) * (1 - self.p[self.last_action])

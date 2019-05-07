@@ -5,21 +5,40 @@ import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     game = np.asarray([[1,0],
-                       [0,2]])
+                       [0,1]], dtype = np.float64)
     """
     UCB konverguje, kdyz -0.4765260 zmenime na -0.4765261 tak diverguje
     """
     game = np.asarray([[0,-0.476526], 
                        [11,-10],
                        [-10,11]], dtype = np.float64)
+    
     game = np.asarray([[0.9740483 , 0.63154835, 0.09830574, 0.        ],
        [0.17752728, 0.65709828, 0.09961379, 0.92046434],
        [0.35022567, 0.8916837 , 1.        , 0.53076941],
        [0.49642977, 0.80655912, 0.68135012, 0.37950726]], dtype = np.float64)
     
-    game = np.asarray([[0,-0.476526], 
-                       [11,-10],
-                       [-10,11]], dtype = np.float64)
+    
+    game = np.asarray([[1000,-1, 1000], 
+                       [1,0, 1],
+                       [1000,-1, 1000]], dtype = np.float64)
+    
+    game = np.asarray([[1,0],
+                       [0,20]], dtype = np.float64)
+    
+    game = np.array([[1.0, 0.9, 0.3, 0.0],
+                     [0.2, 0.2, 0.2, 0.7],
+                     [0.8, 0.3, 0.3, 0.6],
+                     [1.0, 0.1, 1.0, 0.1]])
+    
+    game = np.asarray([[0.67132272, 0.87748442, 0.64615916],
+                      [0.        , 0.68089036, 1.        ],
+                      [0.12530982, 0.98217995, 0.1154109 ]])
+    
+    
+    
+    
+   
     
     """    
     game = np.asarray([[0.9740483 , 0.63154835, 0.09830574, 0.       ],
@@ -84,7 +103,7 @@ if __name__ == "__main__":
     game -= game.min()
     game /= (game.max() - game.min())
     v, s1, s2 = solve_game(game)
-    num_rounds = 500000
+    num_rounds = 400000
     
     player1 = Exp3Agent(game.shape[0], num_rounds)
     player2 = Exp3Agent(game.shape[1], num_rounds)
@@ -98,11 +117,19 @@ if __name__ == "__main__":
     player1 = GradientBasedAgent(game.shape[0], alpha=0.01)
     player2 = GradientBasedAgent(game.shape[1], alpha=0.01)
     
+   # player1 = QAgent(game.shape[0], epsilon = 0.25)
+    #player2 = QAgent(game.shape[1], epsilon = 0.25)
+    
     epsilons = []
     v_estimates_error = []
     
                       
     avg_v = 0
+    estimates1 =[]  
+    estimates2 =[] 
+    
+    a11 = []
+    a21 = []
         
     for t in range(num_rounds):
         action1 = player1.select_action()
@@ -120,6 +147,7 @@ if __name__ == "__main__":
         avg_v = (avg_v * t + reward1) / (t + 1)
         v_estimates_error.append(np.abs(avg_v - v))
         
+        
         if (t % 1 == 0 and t > 0):
             avg_strategy_1 = player1.greedy_trials / np.sum(player1.greedy_trials)
             avg_strategy_2 = player2.greedy_trials / np.sum(player2.greedy_trials)
@@ -128,12 +156,25 @@ if __name__ == "__main__":
             empirical_v = np.dot(np.dot(avg_strategy_1, game), avg_strategy_2)
             epsilon1 = np.abs(br_value_1 - empirical_v)
             epsilon2 = np.abs(br_value_2 - empirical_v)
+            
+            #estimates1.append(np.copy(player1.estimates))
+            #estimates2.append(np.copy(player2.estimates))
             epsilons.append(max(epsilon1, epsilon2))
+            #epsilons.append(epsilon1)
         if t % 10000 == 0:
             print(f"{int(t/1000)}k")
+            print("Avg. strategy 1", avg_strategy_1)
+            print("Avg. strategy 2", avg_strategy_2)
+            print("Current strategy 1", player1.p)
+            print("Current strategy 2", player2.p)
                         
             
-        
+    #estimates1 = np.asarray(estimates1)   
+    #estimates2 = np.asarray(estimates2)   
+    #regime1 = (estimates1[:,0]>=estimates1[:,1]) *(estimates2[:,0]>=estimates2[:,1])
+#    regime2 = (estimates1[:,0]>=estimates1[:,1]) *(estimates2[:,0]<estimates2[:,1])
+#    regime3 = (estimates1[:,0]<estimates1[:,1]) *(estimates2[:,0]>=estimates2[:,1])
+#    regime4 = (estimates1[:,0]<estimates1[:,1]) *(estimates2[:,0]<estimates2[:,1])
     print("Player 1 average strategy:", player1.greedy_trials / np.sum(player1.greedy_trials))
     print("Player 2 average strategy:", player2.greedy_trials / np.sum(player2.greedy_trials))
     plt.plot(epsilons)
@@ -144,6 +185,13 @@ if __name__ == "__main__":
     plt.xlabel("t")
     plt.ylabel("v estimate error")
     plt.show()
+    
+#    plot_regimes_from = 0
+#    plt.plot(regime1[plot_regimes_from:])
+#    plt.plot(regime2[plot_regimes_from:])
+#    plt.plot(regime3[plot_regimes_from:])
+#    plt.plot(regime4[plot_regimes_from:])
+#    plt.show()
     
     outcomes /= np.sum(outcomes)
     dist_neq = np.zeros_like(outcomes)

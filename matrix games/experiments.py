@@ -1,12 +1,23 @@
 import numpy as np
-from agents import QAgent, UCBAgent, Exp3Agent
+from agents import QAgent, UCBAgent, Exp3Agent, GradientBasedAgent
 from game_solver import solve_game
 import matplotlib.pyplot as plt
 
 
+def num_neqs(game: np.ndarray) -> int:
+    neqs = 0
+    m, n = game.shape
+    for i in range(m):
+        for j in range(n):
+            if game[i][j] >= np.max(game[:,j]) and game[i][j] <= np.min(game[i,:]):
+                neqs += 1
+    return neqs
+            
+
+
 if __name__ == "__main__":
     
-    NUM_EXPERIMENTS = 15
+    NUM_EXPERIMENTS = 100
     games = []
     epsilons = []
     strategies_1_neq = []
@@ -15,30 +26,35 @@ if __name__ == "__main__":
     strategies_2_avg = []
     game_values = []
     for i in range(NUM_EXPERIMENTS):
-        game = np.random.random((4,4))
+        game = np.random.random((3,3))        
+        
+        #game[0,:] = np.random.random(50)
+        #game[1,:] = game[0,:] + np.random.random(50) / 10
         game -= game.min()
         game /= (game.max() - game.min())
         print(i)
         
-        num_rounds = 200000
+        num_rounds = 250000
         
-        player1 = QAgent(game.shape[0], epsilon = 0.1, diminish=True)
-        player2 = QAgent(game.shape[1], epsilon = 0.1, diminish=True)
+        player1 = QAgent(game.shape[0], epsilon = 0.1, diminish=False)
+        player2 = QAgent(game.shape[1], epsilon = 0.1, diminish=False)
+        player1 = GradientBasedAgent(game.shape[0], alpha=0.01)
+        player2 = GradientBasedAgent(game.shape[1], alpha=0.01)
     
         
-        
-        reward1 = 0
-        reward2 = 0
                     
         for t in range(num_rounds):
-            action1 = player1.select_action(reward1)
-            action2 = player2.select_action(reward2)
+            action1 = player1.select_action()
+            action2 = player2.select_action()
             outcome = game[action1, action2]
             reward1 = outcome
             reward2 = 1 - outcome  
+            
+            player1.get_reward_and_update(reward1)
+            player2.get_reward_and_update(reward2)
        
-        avg_strategy_1 = player1.trials / np.sum(player1.trials)
-        avg_strategy_2 = player2.trials / np.sum(player2.trials)        
+        avg_strategy_1 = player1.greedy_trials / np.sum(player1.greedy_trials)
+        avg_strategy_2 = player2.greedy_trials / np.sum(player2.greedy_trials)        
         
         estimated_v = np.dot(avg_strategy_1 ,np.dot(game, avg_strategy_2))
         br_value_1 = np.max(np.dot(game, avg_strategy_2)) 
